@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Smoke-test the built package (ESM and CommonJS)
+        run: |
+          node examples/generate-qr.mjs
+          node -e "const { encodeQr, decodeQr } = require('@ahmed29345/zatca-qr'); decodeQr(encodeQr({ sellerName: 'A', vatNumber: '310122393500003', timestamp: '2022-04-25T15:30:00Z', invoiceTotal: '1.15', vatTotal: '0.15' }))"
